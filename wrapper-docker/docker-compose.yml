@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  wrapper:
+    build: .
+    container_name: apple-music-wrapper
+    ports:
+      - "10020:10020"  # Decrypt port
+      - "20020:20020"  # M3U8 port
+      - "30020:30020"  # Account port
+    volumes:
+      - ./rootfs/data:/app/rootfs/data  # Persistent login data
+    environment:
+      - args=-H 0.0.0.0
+    restart: unless-stopped
+    privileged: true
+    stdin_open: true
+    tty: true
