@@ -1,163 +1,245 @@
 # AM-DL
 
-Windows-first Apple Music downloader workspace with a beginner-friendlier CLI flow.
+Beginner-friendly Apple Music downloader workspace for Windows.
+
+Language:
+
+- English: `README.md`
+- Bahasa Indonesia: `README-ID.md`
+
+## What this repository contains
+
+This repo is set up so beginners can get started faster.
+
+Important files and folders:
+
+- `amdl.exe` — prebuilt Windows binary for quick start
+- `config.yaml` — starter config with safe placeholder values
+- `setup.ps1` — builds/checks the local setup
+- `wrapper-login.ps1` — Apple Music login helper
+- `wrapper-start.ps1` — starts/stops/checks the backend wrapper
+- `start.bat` — starts wrapper, then opens `amdl`
+- `download.bat` — quick helper for direct download command forwarding
+- `client/` — Go source code for the app
+- `wrapper-docker/` — Docker runtime bundle for the supported backend
+- `wrapper-src/` — source/reference bundle kept in the repo because it may still be useful for advanced/manual workflows
+- `tools/` — optional local folder for binaries like `mp4decrypt.exe`
 
 Supported backend target:
 
 - `WorldObservationLog/wrapper`
 
-## Current layout
+## Before you start
 
-```text
-APPLEMSC_DOWNLOAD/
-├── amdl.exe          # Prebuilt Windows binary for quick start
-├── client/           # Go source for amdl
-├── config.yaml       # Starter config file with safe placeholder values
-├── wrapper-docker/   # Docker runtime bundle for wrapper
-├── wrapper-src/      # Wrapper source/reference bundle for advanced use
-├── tools/            # Optional local binaries like mp4decrypt.exe
-├── release/          # Quickstart docs used in release bundle
-└── README.md         # Beginner-friendly setup guide
-```
+You still need:
 
-## What changed
+- an active Apple Music subscription
+- Docker Desktop installed and running
+- MP4Box / GPAC installed
 
-The client now exposes a cleaner command shell:
-
-```powershell
-amdl
-amdl setup
-amdl doctor
-amdl login
-amdl logout
-amdl token set
-amdl search album "Taylor Swift"
-amdl download https://music.apple.com/us/album/1989-taylors-version-deluxe/1713845538
-amdl backend status
-```
-
-Legacy flags still work, for example:
-
-```powershell
-amdl --search album "Taylor Swift"
-amdl --atmos https://music.apple.com/us/album/1989-taylors-version-deluxe/1713845538
-```
-
-## Prerequisites
-
-Required:
-
-- Docker Desktop
-- Go
-- MP4Box / GPAC
-
-Optional:
+Optional but recommended:
 
 - `ffmpeg`
-- `mp4decrypt`
+- `mp4decrypt.exe` (needed for Music Video support)
 
-For beginner-friendly MV support, you can place `mp4decrypt.exe` in either:
+`amdl doctor` will tell you which parts are missing.
 
-- the workspace root beside `amdl.exe`
-- a local `tools/` folder
-- or install it globally in `PATH`
+---
 
-Set the MV / AAC-LC token locally with:
+## Fastest beginner path
 
-```powershell
-.\amdl.exe token set
-```
-
-You still need an active Apple Music subscription.
-
-## Quick start for beginners
-
-If `amdl.exe` is already present in the repo or release ZIP, you can skip the manual build step.
+If you want the shortest possible path:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\setup.ps1          # safe to rerun; rebuilds amdl.exe if needed
+.\setup.ps1
 .\amdl.exe login
-.\amdl.exe token set      # optional, needed for MV / AAC-LC
 .\wrapper-start.ps1
 .\amdl.exe doctor
 .\amdl.exe
 ```
 
-If you want Music Video support, also place `mp4decrypt.exe` in one of these locations:
+If you want MV / AAC-LC features too:
 
-- beside `amdl.exe`
-- in `tools\mp4decrypt.exe`
+```powershell
+.\amdl.exe token set
+```
+
+and place `mp4decrypt.exe` in one of these locations:
+
+- next to `amdl.exe`
+- `tools\mp4decrypt.exe`
 - anywhere in `PATH`
 
-## Build the client manually
+---
+
+## Detailed install guide (step by step)
+
+## Step 1 — Open PowerShell in this folder
+
+Make sure you are inside this repo folder.
+
+You should see files like:
+
+- `amdl.exe`
+- `setup.ps1`
+- `wrapper-login.ps1`
+- `wrapper-start.ps1`
+
+You can confirm with:
 
 ```powershell
-cd client
-go mod download
-go build -o ..\amdl.exe .
+dir
 ```
 
-This produces `amdl.exe` at workspace root.
+## Step 2 — Allow local PowerShell scripts for this session
 
-The repo also includes a starter `config.yaml` with placeholder values, so beginners do not need to create it from scratch.
-
-## Beginner helper scripts
-
-Root helper scripts now exist for the common Windows flow:
-
-- `setup.ps1` — build `amdl.exe`, optionally build wrapper image, and bootstrap root `config.yaml`
-- `wrapper-login.ps1` — low-level login helper used by `amdl login`
-- `wrapper-start.ps1` — start/stop/status/logs/rebuild for the wrapper container
-- `download.bat` — quick download helper that forwards to `amdl.exe`
-- `start.bat` — start wrapper, then open the interactive `amdl` menu
-- `config.example.yaml` — portable config template for release bundles
-
-Or use `start.bat` after `amdl.exe` is built and login data already exists.
-
-## Advanced: start the wrapper backend manually
-
-Build the Docker image:
+Run:
 
 ```powershell
-cd wrapper-docker
-docker build --tag apple-music-wrapper .
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-Login once to persist account data:
+This only affects the current PowerShell window.
+
+## Step 3 — Run setup
+
+Run:
 
 ```powershell
-docker run -it --rm `
-  -v "${PWD}\rootfs\data:/app/rootfs/data" `
-  -e "args=-L YOUR_EMAIL:YOUR_PASSWORD -H 0.0.0.0" `
-  --name apple-music-wrapper-login `
-  apple-music-wrapper
+.\setup.ps1
 ```
 
-Then start the backend:
+What this does:
+
+- builds `amdl.exe` if needed
+- prepares the wrapper Docker image
+- prepares the local config flow
+
+When it succeeds, you should see something like:
+
+- `Setup complete`
+- next steps mentioning `amdl.exe login`
+
+## Step 4 — Log in with your own Apple Music account
+
+Run:
 
 ```powershell
-docker run -d `
-  --name apple-music-wrapper `
-  --restart unless-stopped `
-  --privileged `
-  -p 10020:10020 `
-  -p 20020:20020 `
-  -p 30020:30020 `
-  -v "${PWD}\rootfs\data:/app/rootfs/data" `
-  -e "args=-H 0.0.0.0" `
-  apple-music-wrapper
+.\amdl.exe login
 ```
 
-## First-run checklist
+What this does:
 
-1. Run `setup.ps1`
-2. Run `amdl.exe login`
-3. Optional: run `amdl.exe token set` for MV / AAC-LC
-4. Optional: place `mp4decrypt.exe` in `tools/` for MV support
-5. Run `wrapper-start.ps1`
-6. Run `amdl.exe doctor`
-7. Start using `amdl.exe`
+- opens the wrapper login flow
+- uses your account one time to create a local session/cache
+- does **not** store your password in `config.yaml`
+
+After success, the session is cached locally under:
+
+```text
+wrapper-docker/rootfs/data/
+```
+
+If Apple asks for 2FA, complete it in the terminal flow.
+
+## Step 5 — Start the backend wrapper
+
+Run:
+
+```powershell
+.\wrapper-start.ps1
+```
+
+This should expose these ports locally:
+
+- `127.0.0.1:10020`
+- `127.0.0.1:20020`
+- `127.0.0.1:30020`
+
+To check status:
+
+```powershell
+.\wrapper-start.ps1 -Status
+```
+
+## Step 6 — Run doctor check
+
+Run:
+
+```powershell
+.\amdl.exe doctor
+```
+
+You want to see at least:
+
+- backend ports reachable
+- login session cached locally
+- MP4Box available
+
+Possible warnings:
+
+- `media-user-token` missing → MV / AAC-LC features not ready yet
+- `mp4decrypt` missing → Music Video support not ready yet
+
+## Step 7 — Start using the app
+
+Run:
+
+```powershell
+.\amdl.exe
+```
+
+This opens the interactive menu.
+
+Main beginner actions:
+
+- Search & Download
+- Download from URL
+- Setup Wizard
+- Login to Apple Music
+- Doctor Check
+- Backend Status
+
+---
+
+## Optional: enable MV / AAC-LC features
+
+These features need extra setup.
+
+## 1) Set `media-user-token`
+
+Run:
+
+```powershell
+.\amdl.exe token set
+```
+
+This stores the token locally in `config.yaml`.
+
+## 2) Add `mp4decrypt.exe`
+
+Put the real binary in one of these places:
+
+- `.\mp4decrypt.exe`
+- `.\tools\mp4decrypt.exe`
+- or install it globally in `PATH`
+
+## 3) Verify again
+
+Run:
+
+```powershell
+.\amdl.exe doctor
+```
+
+For full MV readiness, the doctor output should no longer warn about:
+
+- `media-user-token`
+- `mp4decrypt`
+- `Music Video readiness`
+
+---
 
 ## Useful commands
 
@@ -166,43 +248,95 @@ docker run -d `
 .\amdl.exe login
 .\amdl.exe logout
 .\amdl.exe token set
+.\amdl.exe token clear
 .\wrapper-start.ps1
 .\wrapper-start.ps1 -Status
 .\wrapper-start.ps1 -Logs
-.\download.bat https://music.apple.com/us/album/1989-taylors-version-deluxe/1713845538
 .\amdl.exe doctor
 .\amdl.exe backend status
 .\amdl.exe backend guide
 .\amdl.exe config show
 .\amdl.exe search song "Blinding Lights"
-.\amdl.exe download https://music.apple.com/us/playlist/taylor-swift-essentials/pl.3950454ced8c45a3b0cc693c2a7db97b
+.\amdl.exe download https://music.apple.com/us/album/1989-taylors-version-deluxe/1713845538
 ```
 
-## Notes about wrapper folders
+---
 
-- `wrapper-docker/` is the only runtime folder needed for the beginner flow
-- `wrapper-src/` is included for source/reference/advanced fallback usage
-- local session/cache lives under `wrapper-docker/rootfs/data` and is not meant to be committed
+## Troubleshooting
 
-## Release packaging
+## Problem: `.amdl.exe` or script is not recognized
 
-This workspace now includes a root GitHub Actions workflow:
+Use `.`? No. Use the normal PowerShell prefix:
+
+```powershell
+.\amdl.exe doctor
+```
+
+and not:
+
+```powershell
+.amdl.exe doctor
+```
+
+## Problem: backend ports are unreachable
+
+Check:
+
+```powershell
+.\wrapper-start.ps1 -Status
+```
+
+If not running, start it again:
+
+```powershell
+.\wrapper-start.ps1
+```
+
+Also confirm Docker Desktop is running.
+
+## Problem: login session missing
+
+Run:
+
+```powershell
+.\amdl.exe login
+```
+
+## Problem: Music Video still not ready
+
+You still need one or both of:
+
+- a valid `media-user-token`
+- `mp4decrypt.exe`
+
+Run:
+
+```powershell
+.\amdl.exe doctor
+```
+
+and check the exact warning line.
+
+---
+
+## Notes
+
+- `config.yaml` in this repo is a starter file with placeholder values
+- local session/cache is stored under `wrapper-docker/rootfs/data`
+- that session data is local runtime data and should not be committed with personal credentials
+- `wrapper-docker/` is the beginner runtime path
+- `wrapper-src/` is kept because you explicitly wanted it included for advanced/reference use
+
+## Release automation
+
+This repo includes:
 
 - `.github/workflows/release.yml`
 
-It prepares a Windows portable ZIP containing:
+It can build a Windows portable release bundle containing:
 
 - `amdl.exe`
+- helper scripts
 - `config.example.yaml`
-- root helper scripts
+- quickstart documentation
 - `wrapper-docker/`
-- quickstart docs
-
-## Included features
-
-- interactive `amdl` menu
-- `setup`, `login`, `logout`, `doctor`
-- `token set` / `token clear`
-- backend status and guide commands
-- Windows helper scripts
-- release packaging workflow
