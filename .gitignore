@@ -1,0 +1,30 @@
+# Local planning/output files
+plan.md
+AM-DL downloads/
+AM-DL-AAC downloads/
+AM-DL-Atmos downloads/
+AM-DL-MV downloads/
+
+# Local tool drops
+tools/*.exe
+tools/*.cmd
+tools/*.bat
+
+# Local build artifacts
+client/*.exe
+client/*.test
+client/amdl-test.exe
+
+# Wrapper runtime/session cache
+wrapper-docker/rootfs/data/
+
+# Nested local git metadata
+client/.git/
+client/AM-DL downloads/
+client/.github/
+client/.gitignore
+client/Dockerfile
+client/README.md
+client/README-CN.md
+client/agent.js
+client/agent-arm64.js
