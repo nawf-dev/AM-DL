@@ -26,5 +26,3 @@ client/.gitignore
 client/Dockerfile
 client/README.md
 client/README-CN.md
-client/agent.js
-client/agent-arm64.js
