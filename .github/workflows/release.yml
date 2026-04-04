@@ -1,0 +1,66 @@
+name: Build Windows Portable Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows-portable:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.1"
+
+      - name: Build amdl.exe
+        working-directory: client
+        run: |
+          go mod download
+          go build -o ..\amdl.exe .
+
+      - name: Prepare portable bundle
+        shell: pwsh
+        run: |
+          $bundle = Join-Path $PWD "dist\amdl-windows-portable"
+          if (Test-Path $bundle) { Remove-Item $bundle -Recurse -Force }
+          New-Item -ItemType Directory -Force -Path $bundle | Out-Null
+
+          Copy-Item ".\amdl.exe" "$bundle\amdl.exe"
+          Copy-Item ".\config.example.yaml" "$bundle\config.example.yaml"
+          Copy-Item ".\README.md" "$bundle\README.md"
+          Copy-Item ".\release\README-QUICKSTART.md" "$bundle\README-QUICKSTART.md"
+          Copy-Item ".\setup.ps1" "$bundle\setup.ps1"
+          Copy-Item ".\wrapper-login.ps1" "$bundle\wrapper-login.ps1"
+          Copy-Item ".\wrapper-start.ps1" "$bundle\wrapper-start.ps1"
+          Copy-Item ".\download.bat" "$bundle\download.bat"
+          Copy-Item ".\start.bat" "$bundle\start.bat"
+          Copy-Item ".\wrapper-docker" "$bundle\wrapper-docker" -Recurse
+
+      - name: Create release zip
+        shell: pwsh
+        run: |
+          $zip = Join-Path $PWD "dist\amdl-windows-portable.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path ".\dist\amdl-windows-portable\*" -DestinationPath $zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: amdl-windows-portable
+          path: dist/amdl-windows-portable.zip
+
+      - name: Publish release asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/amdl-windows-portable.zip
