@@ -59,6 +59,16 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\amdl.exe
 ```
 
+If you double-click the beginner PowerShell scripts, they now stay open at the end so the window does not instantly disappear.
+
+Advanced usage from an existing terminal:
+
+```powershell
+.\setup.ps1 -NoPause
+.\wrapper-login.ps1 -NoPause
+.\wrapper-start.ps1 -NoPause
+```
+
 If you want MV / AAC-LC features too:
 
 ```powershell
@@ -70,6 +80,63 @@ and place `mp4decrypt.exe` in one of these locations:
 - next to `amdl.exe`
 - `tools\mp4decrypt.exe`
 - anywhere in `PATH`
+
+---
+
+## Daily use / the next time you open AM-DL
+
+If you have already completed setup before, you usually do **not** need to start from zero again.
+
+For normal repeat usage, usually just do this:
+
+```powershell
+cd "YOUR_AM-DL_FOLDER"
+.\wrapper-start.ps1
+.\amdl.exe
+```
+
+If you want to check everything first:
+
+```powershell
+.\wrapper-start.ps1 -Status
+.\amdl.exe doctor
+```
+
+### When do you need `setup.ps1` again?
+
+Usually only if:
+
+- `amdl.exe` is missing
+- you moved the project to a new PC or folder
+- you want to rebuild from source
+- you want to regenerate/check the local setup again
+
+### When do you need `amdl.exe login` again?
+
+Usually only if:
+
+- the local session is missing
+- you logged out/reset the session
+- the wrapper cache was deleted
+- `amdl doctor` says the login session is missing
+
+### When do you need `amdl.exe token set` again?
+
+Only if:
+
+- you want MV / AAC-LC features
+- your `media-user-token` changed or expired
+- you cleared your config and need to enter the token again
+
+### Short version
+
+For most day-to-day usage:
+
+```powershell
+cd "YOUR_AM-DL_FOLDER"
+.\wrapper-start.ps1
+.\amdl.exe
+```
 
 ---
 

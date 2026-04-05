@@ -17,6 +17,8 @@ This will:
 - create a default `config.yaml` if needed
 - optionally run a doctor check
 
+If you double-click the PowerShell scripts, the window will stay open at the end instead of disappearing immediately.
+
 ## 3. Login to wrapper
 
 ```powershell
