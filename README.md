@@ -29,20 +29,113 @@ Supported backend target:
 
 - `WorldObservationLog/wrapper`
 
-## Before you start
+## System architecture
 
-You still need:
+```mermaid
+flowchart TD
+    U[User] --> PS[PowerShell in the AM-DL folder]
+    PS --> SETUP[setup.ps1 - first setup / repair]
+    PS --> START[wrapper-start.ps1 - daily start]
+    PS --> APP[amdl.exe]
 
-- an active Apple Music subscription
+    APP --> CFG[config.yaml]
+    APP --> LOGIN[amdl.exe login]
+    LOGIN --> WRAP
+
+    START --> DOCKER[Docker Desktop]
+    DOCKER --> WRAP[apple-music-wrapper container]
+    WRAP --> CACHE[Local session cache\nwrapper-docker/rootfs/data]
+
+    APP --> API[Apple Music playback / license endpoints]
+    APP --> MP4BOX[MP4Box / GPAC]
+    APP --> FFMPEG[ffmpeg - optional convert]
+    APP --> MP4DEC[mp4decrypt - optional MV]
+```
+
+## Requirements (read this first)
+
+### Required for normal use
+
+- Windows
 - Docker Desktop installed and running
 - MP4Box / GPAC installed
+- an active Apple Music subscription
+- this repo extracted to a normal folder (not still inside a ZIP preview)
 
-Optional but recommended:
+### Required only if you want to rebuild from source
+
+- Go
+
+### Optional / advanced
 
 - `ffmpeg`
-- `mp4decrypt.exe` (needed for Music Video support)
+- `media-user-token` for MV / AAC-LC / some lyric-related features
+- `mp4decrypt.exe` for Music Video support
 
-`amdl doctor` will tell you which parts are missing.
+### Important note about Go
+
+If `amdl.exe` is already present in the folder, you do **not** need Go just to use the app.
+
+`amdl doctor` will tell you which parts are still missing.
+
+## How to open PowerShell in the correct folder
+
+This is very important. Most beginner errors happen because PowerShell is opened in the wrong folder.
+
+### Easy method (recommended)
+
+1. Open File Explorer
+2. Open your AM-DL folder
+3. Click the address bar
+4. Type:
+
+```text
+powershell
+```
+
+5. Press Enter
+
+PowerShell will open directly in the correct folder.
+
+### Manual method
+
+If your AM-DL folder is, for example, `E:\AM-DL`, run:
+
+```powershell
+cd "E:\AM-DL"
+```
+
+If your path contains spaces, always use quotes.
+
+Correct:
+
+```powershell
+cd "C:\Users\Your Name\Downloads\AM-DL"
+```
+
+Wrong:
+
+```powershell
+cd C:\Users\Your Name\Downloads\AM-DL
+```
+
+### How to confirm you are in the right folder
+
+Run:
+
+```powershell
+dir
+```
+
+You should see files like:
+
+- `setup.ps1`
+- `amdl.exe`
+- `wrapper-login.ps1`
+- `wrapper-start.ps1`
+- `README.md`
+
+If you do **not** see those files, you are in the wrong folder.
 
 ---
 
