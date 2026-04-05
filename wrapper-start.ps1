@@ -2,7 +2,8 @@ param(
     [switch]$Stop,
     [switch]$Status,
     [switch]$Logs,
-    [switch]$Rebuild
+    [switch]$Rebuild,
+    [switch]$NoPause
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,6 +12,25 @@ $WRAPPER_DIR = Join-Path $ROOT "wrapper-docker"
 $DATA_DIR = Join-Path $WRAPPER_DIR "rootfs\data"
 $SESSION_DIR = Join-Path $DATA_DIR "data\com.apple.android.music"
 $CONTAINER = "apple-music-wrapper"
+
+function Pause-IfNeeded {
+    if (-not $NoPause) {
+        Write-Host ""
+        Read-Host "Press Enter to close"
+    }
+}
+
+function Exit-Script($code) {
+    Pause-IfNeeded
+    exit $code
+}
+
+trap {
+    Write-Host ""
+    Write-Host $_ -ForegroundColor Red
+    Pause-IfNeeded
+    exit 1
+}
 
 function Ensure-Docker {
     try {
@@ -47,7 +67,7 @@ if ($Rebuild) {
         Pop-Location
     }
     Write-Host "Wrapper image rebuilt." -ForegroundColor Green
-    exit 0
+    Exit-Script 0
 }
 
 if ($Stop) {
@@ -57,12 +77,12 @@ if ($Stop) {
         docker rm $CONTAINER 2>$null | Out-Null
     }
     Write-Host "Wrapper stopped." -ForegroundColor Green
-    exit 0
+    Exit-Script 0
 }
 
 if ($Logs) {
     docker logs -f $CONTAINER
-    exit $LASTEXITCODE
+    Exit-Script $LASTEXITCODE
 }
 
 if ($Status) {
@@ -87,13 +107,13 @@ if ($Status) {
     } else {
         Write-Host "  ⚠ Session cache missing. Run .\wrapper-login.ps1 first." -ForegroundColor Yellow
     }
-    exit 0
+    Exit-Script 0
 }
 
 $runningId = docker ps --filter "name=^/${CONTAINER}$" --format "{{.ID}}"
 if ($runningId) {
     Write-Host "Wrapper already running: $runningId" -ForegroundColor Yellow
-    exit 0
+    Exit-Script 0
 }
 
 if (-not (Test-Path $SESSION_DIR)) {
@@ -122,4 +142,5 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Wrapper started." -ForegroundColor Green
 Start-Sleep -Seconds 3
-& "$PSCommandPath" -Status
+& "$PSCommandPath" -Status -NoPause
+Pause-IfNeeded

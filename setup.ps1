@@ -2,7 +2,8 @@ param(
     [switch]$SkipDocker,
     [switch]$SkipConfig,
     [switch]$SkipDoctor,
-    [switch]$ForceConfig
+    [switch]$ForceConfig,
+    [switch]$NoPause
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,6 +18,20 @@ function Write-Ok($text) { Write-Host "[ OK ] $text" -ForegroundColor Green }
 function Write-Warn($text) { Write-Host "[WARN] $text" -ForegroundColor Yellow }
 function Write-Err($text) { Write-Host "[FAIL] $text" -ForegroundColor Red }
 
+function Pause-IfNeeded {
+    if (-not $NoPause) {
+        Write-Host ""
+        Read-Host "Press Enter to close"
+    }
+}
+
+trap {
+    Write-Host ""
+    Write-Err $_
+    Pause-IfNeeded
+    exit 1
+}
+
 function Test-CommandExists($name) {
     try {
         Get-Command $name -ErrorAction Stop | Out-Null
@@ -26,12 +41,30 @@ function Test-CommandExists($name) {
     }
 }
 
+function Test-DockerReady {
+    try {
+        docker info 2>$null | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
+    }
+}
+
 if (-not (Test-Path $CLIENT_DIR)) {
     throw "client directory not found: $CLIENT_DIR"
 }
 
-if (-not (Test-CommandExists "go")) {
-    throw "Go not found in PATH"
+$hasGo = Test-CommandExists "go"
+$hasPrebuiltBinary = Test-Path $BINARY_PATH
+
+if (-not $hasGo -and -not $hasPrebuiltBinary) {
+    throw @"
+Go not found in PATH, and no prebuilt amdl.exe was found.
+
+You can fix this in one of two ways:
+1. Install Go and run .\setup.ps1 again
+2. Download/use a repo or release bundle that already includes amdl.exe
+"@
 }
 
 if (-not $SkipDocker) {
@@ -39,12 +72,25 @@ if (-not $SkipDocker) {
         throw "Docker not found in PATH"
     }
 
+    if (-not (Test-DockerReady)) {
+        throw @"
+Docker Desktop is not ready.
+
+Please do this first:
+1. Open Docker Desktop
+2. Wait until it fully finishes starting
+3. Make sure it is using Linux containers
+4. Run `docker info` and confirm it works
+5. Run .\setup.ps1 again
+"@
+    }
+
     Write-Info "Building wrapper Docker image..."
     Push-Location $WRAPPER_DIR
     try {
         docker build --tag apple-music-wrapper .
         if ($LASTEXITCODE -ne 0) {
-            throw "Docker build failed"
+            throw "Docker build failed. Try running `docker build --tag apple-music-wrapper .` inside wrapper-docker to see the full error."
         }
     } finally {
         Pop-Location
@@ -52,22 +98,26 @@ if (-not $SkipDocker) {
     Write-Ok "Wrapper Docker image ready"
 }
 
-Write-Info "Building amdl.exe..."
-Push-Location $CLIENT_DIR
-try {
-    go mod download
-    if ($LASTEXITCODE -ne 0) {
-        throw "go mod download failed"
-    }
+if ($hasGo) {
+    Write-Info "Building amdl.exe..."
+    Push-Location $CLIENT_DIR
+    try {
+        go mod download
+        if ($LASTEXITCODE -ne 0) {
+            throw "go mod download failed"
+        }
 
-    go build -o $BINARY_PATH .
-    if ($LASTEXITCODE -ne 0) {
-        throw "go build failed"
+        go build -o $BINARY_PATH .
+        if ($LASTEXITCODE -ne 0) {
+            throw "go build failed"
+        }
+    } finally {
+        Pop-Location
     }
-} finally {
-    Pop-Location
+    Write-Ok "Built $BINARY_PATH"
+} else {
+    Write-Warn "Go not found in PATH. Using existing prebuilt amdl.exe instead."
 }
-Write-Ok "Built $BINARY_PATH"
 
 if ((-not $SkipConfig) -and ((-not (Test-Path $CONFIG_PATH)) -or $ForceConfig)) {
     Write-Info "Creating root config.yaml via amdl config reset..."
@@ -104,3 +154,4 @@ Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  1. .\amdl.exe login"
 Write-Host "  2. .\wrapper-start.ps1"
 Write-Host "  3. .\amdl.exe"
+Pause-IfNeeded

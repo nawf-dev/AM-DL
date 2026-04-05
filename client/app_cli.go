@@ -633,7 +633,9 @@ func runLoginCommand() error {
 	loginPass := os.Getenv("AMDL_LOGIN_PASSWORD")
 	if loginUser != "" && loginPass != "" {
 		fmt.Println("Using one-time environment credentials for non-interactive login.")
-		args = append(args, "-Username", loginUser, "-Password", loginPass, "-NonInteractive")
+		args = append(args, "-Username", loginUser, "-Password", loginPass, "-NonInteractive", "-NoPause")
+	} else {
+		args = append(args, "-NoPause")
 	}
 	cmd := exec.Command(powerShellBinary(), args...)
 	cmd.Stdin = os.Stdin

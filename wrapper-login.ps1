@@ -1,13 +1,28 @@
 param(
     [string]$Username,
     [string]$Password,
-    [switch]$NonInteractive
+    [switch]$NonInteractive,
+    [switch]$NoPause
 )
 
 $ErrorActionPreference = "Stop"
 $ROOT = $PSScriptRoot
 $WRAPPER_DIR = Join-Path $ROOT "wrapper-docker"
 $DATA_DIR = Join-Path $WRAPPER_DIR "rootfs\data"
+
+function Pause-IfNeeded {
+    if (-not $NoPause) {
+        Write-Host ""
+        Read-Host "Press Enter to close"
+    }
+}
+
+trap {
+    Write-Host ""
+    Write-Host $_ -ForegroundColor Red
+    Pause-IfNeeded
+    exit 1
+}
 
 function Ensure-Docker {
     try {
@@ -103,3 +118,4 @@ Write-Host ""
 Write-Host "Login flow finished." -ForegroundColor Green
 Write-Host "Session cached locally at $cachedPath" -ForegroundColor Green
 Write-Host "Run .\wrapper-start.ps1 next." -ForegroundColor Cyan
+Pause-IfNeeded
