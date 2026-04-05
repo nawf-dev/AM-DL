@@ -2,10 +2,7 @@
 
 Workspace downloader Apple Music yang dibuat lebih ramah pemula untuk Windows.
 
-Bahasa:
-
-- English: `README.md`
-- Bahasa Indonesia: `README-ID.md`
+[🇺🇸 English](./README.md) | [🇮🇩 Bahasa Indonesia](./README-ID.md)
 
 ## Isi repository ini
 
@@ -50,6 +47,27 @@ flowchart TD
     APP --> MP4BOX[MP4Box / GPAC]
     APP --> FFMPEG[ffmpeg - convert opsional]
     APP --> MP4DEC[mp4decrypt - opsional untuk MV]
+```
+
+### Flow detail
+
+```mermaid
+flowchart LR
+    A[Buka PowerShell di folder AM-DL] --> B[Jalankan setup.ps1 sekali]
+    B --> C[Jalankan amdl.exe login]
+    C --> D[Session tersimpan lokal]
+    D --> E[Jalankan wrapper-start.ps1]
+    E --> F[Port wrapper 10020/20020/30020 aktif]
+    F --> G[Jalankan amdl.exe atau amdl.exe doctor]
+    G --> H[Search / paste URL Apple Music]
+    H --> I{Mode yang dipilih}
+    I --> J[Sumber ALAC]
+    I --> K[Jalur AAC / Atmos]
+    I --> L[Jalur MV]
+    J --> M[Tagging dengan MP4Box]
+    J --> N[Convert opsional dengan ffmpeg]
+    L --> O[Butuh media-user-token]
+    L --> P[Butuh mp4decrypt.exe]
 ```
 
 ## Requirement (wajib dibaca dulu)
@@ -230,6 +248,24 @@ cd "FOLDER_AM-DL_KAMU"
 .\wrapper-start.ps1
 .\amdl.exe
 ```
+
+## Mode kualitas dan command
+
+| Mode | Jenis source | Contoh command | Catatan |
+|---|---|---|---|
+| ALAC | Source lossless asli | `./amdl.exe "URL"` | Jalur lossless default |
+| AAC | Jalur AAC asli | `./amdl.exe --aac "URL"` | Beberapa fitur AAC butuh `media-user-token` |
+| Atmos | Jalur Atmos asli | `./amdl.exe --atmos "URL"` | Hanya jalan kalau title memang punya Atmos |
+| Song only | Mode single track | `./amdl.exe --song "URL"` | Cocok untuk link lagu langsung |
+| Search mode | Search interaktif | `./amdl.exe search album "Taylor Swift"` | User bisa pilih item dan kualitas secara interaktif |
+| MV | Jalur Music Video | tergantung konten + token + `mp4decrypt.exe` | Untuk setup advanced |
+| Output FLAC | Hasil convert | aktifkan `convert-after-download: true` dan `convert-format: flac` | FLAC adalah hasil convert dari ALAC via `ffmpeg`, bukan source asli |
+
+Catatan:
+
+- Source lossless asli di flow ini adalah **ALAC**, bukan FLAC.
+- Output FLAC adalah **hasil convert**, bukan format source asli.
+- Kalau kualitas yang diminta tidak tersedia untuk title tertentu, mode itu bisa gagal atau fallback tergantung jalurnya.
 
 ---
 
@@ -421,6 +457,46 @@ Kalau MV sudah siap penuh, seharusnya warning berikut hilang:
 ```
 
 ---
+
+## FAQ
+
+### Apakah harus jalankan setup setiap kali?
+
+Tidak. Biasanya hanya pertama kali, atau saat mau repair/rebuild setup.
+
+### Kalau mau jalan lagi biasanya jalankan apa?
+
+Biasanya cukup:
+
+```powershell
+cd "FOLDER_AM-DL_KAMU"
+.\wrapper-start.ps1
+.\amdl.exe
+```
+
+### Apakah harus install Go?
+
+Hanya kalau mau build ulang dari source. Kalau `amdl.exe` sudah ada, Go tidak wajib untuk pemakaian biasa.
+
+### Kenapa `setup.ps1` atau `amdl.exe` tidak dikenali?
+
+Biasanya karena kamu ada di folder yang salah, atau lupa pakai prefix PowerShell `./`.
+
+### Kenapa PowerShell langsung hilang?
+
+Script pemula sekarang sudah pause saat selesai/error. Kalau jalan dari terminal yang sudah terbuka, pakai `-NoPause`.
+
+### Kenapa `mp4decrypt` masih warning?
+
+Karena binary-nya belum ada di `PATH`, di samping `amdl.exe`, atau di `tools\mp4decrypt.exe`.
+
+### Kenapa MV belum ready walau sudah login?
+
+Karena Music Video juga butuh `media-user-token` yang valid dan `mp4decrypt.exe`.
+
+### Apakah FLAC itu source aslinya?
+
+Bukan. Di flow ini source lossless aslinya ALAC. FLAC adalah hasil convert ALAC dengan `ffmpeg`.
 
 ## Troubleshooting
 

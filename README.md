@@ -2,10 +2,7 @@
 
 Beginner-friendly Apple Music downloader workspace for Windows.
 
-Language:
-
-- English: `README.md`
-- Bahasa Indonesia: `README-ID.md`
+[🇺🇸 English](./README.md) | [🇮🇩 Bahasa Indonesia](./README-ID.md)
 
 ## What this repository contains
 
@@ -50,6 +47,27 @@ flowchart TD
     APP --> MP4BOX[MP4Box / GPAC]
     APP --> FFMPEG[ffmpeg - optional convert]
     APP --> MP4DEC[mp4decrypt - optional MV]
+```
+
+### Detailed flow
+
+```mermaid
+flowchart LR
+    A[Open PowerShell in the AM-DL folder] --> B[Run setup.ps1 once]
+    B --> C[Run amdl.exe login]
+    C --> D[Session cached locally]
+    D --> E[Run wrapper-start.ps1]
+    E --> F[Wrapper ports 10020/20020/30020 online]
+    F --> G[Run amdl.exe or amdl.exe doctor]
+    G --> H[Search / paste Apple Music URL]
+    H --> I{Requested mode}
+    I --> J[ALAC source]
+    I --> K[AAC / Atmos path]
+    I --> L[MV path]
+    J --> M[Tag with MP4Box]
+    J --> N[Optional convert with ffmpeg]
+    L --> O[Requires media-user-token]
+    L --> P[Requires mp4decrypt.exe]
 ```
 
 ## Requirements (read this first)
@@ -230,6 +248,24 @@ cd "YOUR_AM-DL_FOLDER"
 .\wrapper-start.ps1
 .\amdl.exe
 ```
+
+## Quality modes and commands
+
+| Mode | Source type | Command example | Notes |
+|---|---|---|---|
+| ALAC | Native lossless source | `./amdl.exe "URL"` | Default lossless path |
+| AAC | Native AAC path | `./amdl.exe --aac "URL"` | Some AAC-related features may need `media-user-token` |
+| Atmos | Native Atmos path | `./amdl.exe --atmos "URL"` | Only works if the title provides Atmos |
+| Song only | Single-track mode | `./amdl.exe --song "URL"` | Useful for direct song links |
+| Search mode | Interactive search | `./amdl.exe search album "Taylor Swift"` | Lets the user choose item and quality interactively |
+| MV | Music Video path | depends on content + token + `mp4decrypt.exe` | Advanced setup only |
+| FLAC output | Converted output | set `convert-after-download: true` and `convert-format: flac` | FLAC is converted from ALAC via `ffmpeg`, not native source |
+
+Notes:
+
+- Apple Music lossless source in this flow is **ALAC**, not FLAC.
+- FLAC output is a **conversion result**, not the original source format.
+- If a requested quality is unavailable for a title, that mode may fail or fall back depending on the path.
 
 ---
 
@@ -421,6 +457,46 @@ For full MV readiness, the doctor output should no longer warn about:
 ```
 
 ---
+
+## FAQ
+
+### Do I need to run setup every time?
+
+No. Usually only the first time, or when repairing/rebuilding the setup.
+
+### What do I usually run next time?
+
+Usually just:
+
+```powershell
+cd "YOUR_AM-DL_FOLDER"
+.\wrapper-start.ps1
+.\amdl.exe
+```
+
+### Do I need Go installed?
+
+Only if you want to rebuild from source. If `amdl.exe` already exists, Go is not required for normal use.
+
+### Why is `setup.ps1` or `amdl.exe` not recognized?
+
+You are probably in the wrong folder, or you forgot the PowerShell `./` prefix.
+
+### Why does PowerShell close too quickly?
+
+The beginner scripts now pause on completion/error. If you run from an existing terminal, use `-NoPause`.
+
+### Why is `mp4decrypt` still a warning?
+
+Because the binary is not present in `PATH`, beside `amdl.exe`, or in `tools\mp4decrypt.exe`.
+
+### Why is MV still not ready even after login?
+
+Music Video support also needs a valid `media-user-token` and `mp4decrypt.exe`.
+
+### Is FLAC the original source?
+
+No. In this flow, original lossless source is ALAC. FLAC is produced by converting ALAC with `ffmpeg`.
 
 ## Troubleshooting
 
