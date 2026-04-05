@@ -230,6 +230,12 @@ Use one of these:
 .\amdl.exe update
 ```
 
+To check whether an update exists without downloading anything:
+
+```powershell
+.\amdl.exe update --check
+```
+
 or:
 
 ```powershell
@@ -243,6 +249,12 @@ What the updater does:
 - keeps your existing `config.yaml`
 - keeps your local wrapper session cache under `wrapper-docker/rootfs/data`
 - tries to run `setup.ps1` afterward if Docker Desktop is ready
+
+If you prefer the script directly, you can also run:
+
+```powershell
+.\update.bat -CheckOnly
+```
 
 After updating, run:
 

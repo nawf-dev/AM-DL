@@ -230,6 +230,12 @@ Pakai salah satu ini:
 .\amdl.exe update
 ```
 
+Kalau cuma mau cek ada update atau tidak tanpa download apa pun:
+
+```powershell
+.\amdl.exe update --check
+```
+
 atau:
 
 ```powershell
@@ -243,6 +249,12 @@ Yang dilakukan updater:
 - tetap mempertahankan `config.yaml` yang sudah kamu isi
 - tetap mempertahankan session cache lokal di `wrapper-docker/rootfs/data`
 - mencoba menjalankan `setup.ps1` setelah update kalau Docker Desktop siap
+
+Kalau mau pakai script langsung, kamu juga bisa jalankan:
+
+```powershell
+.\update.bat -CheckOnly
+```
 
 Setelah update, jalankan:
 
