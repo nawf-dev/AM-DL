@@ -22,4 +22,10 @@ if "%~1"=="" (
 )
 
 "%BIN%" download %*
-exit /b %errorlevel%
+set "CODE=%errorlevel%"
+if not "%CODE%"=="0" (
+  echo.
+  echo Download failed with exit code %CODE%.
+  pause
+)
+exit /b %CODE%

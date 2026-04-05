@@ -43,8 +43,7 @@ func runApp(args []string) error {
 	}
 
 	if isLegacyInvocation(args) {
-		runLegacyWithArgs(args)
-		return nil
+		return runLegacyWithArgs(args)
 	}
 
 	switch args[0] {
@@ -66,6 +65,8 @@ func runApp(args []string) error {
 		return runLogoutCommand(confirm)
 	case "backend":
 		return runBackendCommand(args[1:])
+	case "update":
+		return runUpdateCommand()
 	case "config":
 		return runConfigCommand(args[1:])
 	case "token":
@@ -88,13 +89,16 @@ func looksLikeAppleMusicURL(value string) bool {
 	return strings.Contains(value, "music.apple.com/")
 }
 
-func runLegacyWithArgs(args []string) {
+func runLegacyWithArgs(args []string) error {
 	originalArgs := os.Args
+	originalRetry := legacyRetryPromptEnabled
 	os.Args = append([]string{originalArgs[0]}, args...)
+	legacyRetryPromptEnabled = false
 	defer func() {
 		os.Args = originalArgs
+		legacyRetryPromptEnabled = originalRetry
 	}()
-	legacyMain()
+	return legacyMain()
 }
 
 func printRootUsage() {
@@ -109,6 +113,7 @@ func printRootUsage() {
 	fmt.Println("  amdl download <apple-music-url>")
 	fmt.Println("  amdl login")
 	fmt.Println("  amdl logout [--yes]")
+	fmt.Println("  amdl update")
 	fmt.Println("  amdl token set")
 	fmt.Println("  amdl token clear")
 	fmt.Println("  amdl backend status")
@@ -132,6 +137,7 @@ func runInteractiveHome() error {
 		"Setup Wizard",
 		"Login to Apple Music",
 		"Logout / Reset Session",
+		"Update AM-DL",
 		"Set media-user-token",
 		"Doctor Check",
 		"Backend Status",
@@ -159,14 +165,15 @@ func runInteractiveHome() error {
 		if err := survey.AskOne(&survey.Input{Message: "Apple Music URL:"}, &url, survey.WithValidator(survey.Required)); err != nil {
 			return nil
 		}
-		runLegacyWithArgs([]string{strings.TrimSpace(url)})
-		return nil
+		return runLegacyWithArgs([]string{strings.TrimSpace(url)})
 	case "Setup Wizard":
 		return runSetupWizard()
 	case "Login to Apple Music":
 		return runLoginCommand()
 	case "Logout / Reset Session":
 		return runLogoutCommand(true)
+	case "Update AM-DL":
+		return runUpdateCommand()
 	case "Set media-user-token":
 		return runTokenCommand([]string{"set"})
 	case "Doctor Check":
@@ -197,8 +204,7 @@ func runInteractiveSearchDownload() error {
 	if err := survey.AskOne(&survey.Input{Message: "Search query:"}, &query, survey.WithValidator(survey.Required)); err != nil {
 		return nil
 	}
-	runLegacyWithArgs([]string{"--search", searchType, strings.TrimSpace(query)})
-	return nil
+	return runLegacyWithArgs([]string{"--search", searchType, strings.TrimSpace(query)})
 }
 
 func runSearchCommand(args []string) error {
@@ -213,16 +219,14 @@ func runSearchCommand(args []string) error {
 		return fmt.Errorf("search query is required")
 	}
 	query := strings.Join(args[1:], " ")
-	runLegacyWithArgs([]string{"--search", searchType, query})
-	return nil
+	return runLegacyWithArgs([]string{"--search", searchType, query})
 }
 
 func runDownloadCommand(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("download URL is required")
 	}
-	runLegacyWithArgs(args)
-	return nil
+	return runLegacyWithArgs(args)
 }
 
 func runBackendCommand(args []string) error {
@@ -670,6 +674,24 @@ func runLogoutCommand(confirm bool) error {
 		return err
 	}
 	fmt.Println("Local session removed. Run `amdl login` to sign in again.")
+	return nil
+}
+
+func runUpdateCommand() error {
+	scriptPath, err := session.ScriptPath("update.ps1")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Starting AM-DL updater...")
+	args := []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-WaitForPid", fmt.Sprintf("%d", os.Getpid()), "-NoPause"}
+	cmd := exec.Command(powerShellBinary(), args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	fmt.Println("Updater launched. This process will exit so files can be replaced.")
 	return nil
 }
 

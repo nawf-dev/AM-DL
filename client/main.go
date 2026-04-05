@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"main/internal/appconfig"
 	"main/internal/searchflow"
 	"main/internal/support"
@@ -39,24 +38,33 @@ import (
 )
 
 var (
-	forbiddenNames = regexp.MustCompile(`[/\\<>:"|?*]`)
-	dl_atmos       bool
-	dl_aac         bool
-	dl_select      bool
-	dl_song        bool
-	artist_select  bool
-	debug_mode     bool
-	print_json     bool
-	alac_max       *int
-	atmos_max      *int
-	mv_max         *int
-	mv_audio_type  *string
-	aac_type       *string
-	Config         structs.ConfigSet
-	counter        structs.Counter
-	okDict         = make(map[string][]int)
-	AddedTracks    []AddedTrack
+	forbiddenNames           = regexp.MustCompile(`[/\\<>:"|?*]`)
+	dl_atmos                 bool
+	dl_aac                   bool
+	dl_select                bool
+	dl_song                  bool
+	artist_select            bool
+	debug_mode               bool
+	print_json               bool
+	alac_max                 *int
+	atmos_max                *int
+	mv_max                   *int
+	mv_audio_type            *string
+	aac_type                 *string
+	Config                   structs.ConfigSet
+	counter                  structs.Counter
+	okDict                   = make(map[string][]int)
+	AddedTracks              []AddedTrack
+	legacyRetryPromptEnabled = true
 )
+
+func stdinIsInteractive() bool {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (info.Mode() & os.ModeCharDevice) != 0
+}
 
 type AddedTrack struct {
 	Path     string `json:"path"`
@@ -1575,11 +1583,13 @@ func writeMP4Tags(track *task.Track, lrc string) error {
 	return nil
 }
 
-func legacyMain() {
+func legacyMain() error {
+	counter = structs.Counter{}
+	okDict = make(map[string][]int)
+	AddedTracks = nil
 	cfg, err := appconfig.Load()
 	if err != nil {
-		fmt.Printf("load Config failed: %v", err)
-		return
+		return fmt.Errorf("load Config failed: %w", err)
 	}
 	Config = cfg
 	token, err := ampapi.GetToken()
@@ -1587,8 +1597,7 @@ func legacyMain() {
 		if Config.AuthorizationToken != "" && Config.AuthorizationToken != "your-authorization-token" {
 			token = strings.Replace(Config.AuthorizationToken, "Bearer ", "", -1)
 		} else {
-			fmt.Println("Failed to get token.")
-			return
+			return fmt.Errorf("failed to get token")
 		}
 	}
 	var search_type string
@@ -1626,16 +1635,15 @@ func legacyMain() {
 		if len(args) == 0 {
 			fmt.Println("Error: --search flag requires a query.")
 			pflag.Usage()
-			return
+			return fmt.Errorf("search query is required")
 		}
 		selection, err := searchflow.Handle(Config, search_type, args, token)
 		if err != nil {
-			fmt.Printf("\nSearch process failed: %v\n", err)
-			return
+			return fmt.Errorf("search process failed: %w", err)
 		}
 		if selection.Cancelled || selection.URL == "" {
 			fmt.Println("\nExiting.")
-			return
+			return nil
 		}
 		dl_atmos = false
 		dl_aac = false
@@ -1656,7 +1664,7 @@ func legacyMain() {
 		if len(args) == 0 {
 			fmt.Println("No URLs provided. Please provide at least one URL.")
 			pflag.Usage()
-			return
+			return fmt.Errorf("no URLs provided")
 		}
 		os.Args = args
 	}
@@ -1664,8 +1672,7 @@ func legacyMain() {
 	if strings.Contains(os.Args[0], "/artist/") {
 		urlArtistName, urlArtistID, err := getUrlArtistName(os.Args[0], token)
 		if err != nil {
-			fmt.Println("Failed to get artistname.")
-			return
+			return fmt.Errorf("failed to get artist name")
 		}
 		Config.ArtistFolderFormat = strings.NewReplacer(
 			"{UrlArtistName}", support.LimitString(urlArtistName, Config.LimitMax),
@@ -1673,8 +1680,7 @@ func legacyMain() {
 		).Replace(Config.ArtistFolderFormat)
 		albumArgs, err := checkArtist(os.Args[0], token, "albums")
 		if err != nil {
-			fmt.Println("Failed to get artist albums.")
-			return
+			return fmt.Errorf("failed to get artist albums")
 		}
 		mvArgs, err := checkArtist(os.Args[0], token, "music-videos")
 		if err != nil {
@@ -1682,6 +1688,14 @@ func legacyMain() {
 		}
 		os.Args = append(albumArgs, mvArgs...)
 	}
+	if err := runDownloadPreflight(os.Args); err != nil {
+		return err
+	}
+	resolvedArgs, err := resolveStorefrontFallbackURLs(os.Args, token)
+	if err != nil {
+		return err
+	}
+	os.Args = resolvedArgs
 	albumTotal := len(os.Args)
 	for {
 		for albumNum, urlRaw := range os.Args {
@@ -1739,7 +1753,7 @@ func legacyMain() {
 			}
 			parse, err := url.Parse(urlRaw)
 			if err != nil {
-				log.Fatalf("Invalid URL: %v", err)
+				return fmt.Errorf("invalid URL: %w", err)
 			}
 			var urlArg_i = parse.Query().Get("i")
 
@@ -1776,6 +1790,10 @@ func legacyMain() {
 		if counter.Error == 0 {
 			break
 		}
+		if !legacyRetryPromptEnabled || !stdinIsInteractive() {
+			fmt.Println("Error detected. Skipping retry prompt.")
+			break
+		}
 		fmt.Println("Error detected, press Enter to try again...")
 		fmt.Scanln()
 		fmt.Println("Start trying again...")
@@ -1791,6 +1809,10 @@ func legacyMain() {
 			fmt.Println(string(jsonOutput))
 		}
 	}
+	if counter.Error > 0 {
+		return fmt.Errorf("download completed with %d error(s)", counter.Error)
+	}
+	return nil
 }
 
 func mvDownloader(adamID string, saveDir string, token string, storefront string, mediaUserToken string, track *task.Track) error {
@@ -2035,8 +2057,9 @@ func checkM3u8(b string, f string) (string, error) {
 		adamID := b
 		conn, err := net.Dial("tcp", Config.GetM3u8Port)
 		if err != nil {
-			fmt.Println("Error connecting to device:", err)
-			return "none", err
+			backendErr := support.WrapBackendConnectionError("m3u8 backend", Config.GetM3u8Port, err, Config)
+			fmt.Println(backendErr)
+			return "none", backendErr
 		}
 		defer conn.Close()
 		if f == "song" {
