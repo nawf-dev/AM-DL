@@ -35,10 +35,33 @@ trap {
 function Ensure-Docker {
     try {
         docker info 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "Docker not running" }
-    } catch {
-        throw "Docker Desktop is not running"
+        if ($LASTEXITCODE -eq 0) { return }
+    } catch {}
+
+    $candidates = @(
+        (Join-Path $Env:ProgramFiles "Docker\Docker\Docker Desktop.exe"),
+        (Join-Path ${Env:ProgramFiles(x86)} "Docker\Docker\Docker Desktop.exe")
+    )
+
+    foreach ($candidate in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate) -and (Test-Path $candidate)) {
+            Write-Host "Docker Desktop is not ready. Starting it now..." -ForegroundColor Yellow
+            Start-Process -FilePath $candidate | Out-Null
+            for ($i = 0; $i -lt 60; $i++) {
+                Start-Sleep -Seconds 2
+                try {
+                    docker info 2>&1 | Out-Null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "Docker Desktop is ready." -ForegroundColor Green
+                        return
+                    }
+                } catch {}
+            }
+            throw "Docker Desktop started, but the engine did not become ready in time"
+        }
     }
+
+    throw "Docker Desktop is not running"
 }
 
 function Test-Port($address, $port) {
