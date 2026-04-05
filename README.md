@@ -2,7 +2,7 @@
 
 Beginner-friendly Apple Music downloader workspace for Windows.
 
-[ðŸ‡ºðŸ‡¸ English](./README.md) | [ðŸ‡®ðŸ‡© Bahasa Indonesia](./README-ID.md)
+[🇺🇸 English](./README.md) | [🇮🇩 Bahasa Indonesia](./README-ID.md)
 
 ## What this repository contains
 
@@ -10,17 +10,17 @@ This repo is set up so beginners can get started faster.
 
 Important files and folders:
 
-- `amdl.exe` â€” prebuilt Windows binary for quick start
-- `config.yaml` â€” starter config with safe placeholder values
-- `setup.ps1` â€” builds/checks the local setup
-- `wrapper-login.ps1` â€” Apple Music login helper
-- `wrapper-start.ps1` â€” starts/stops/checks the backend wrapper
-- `start.bat` â€” starts wrapper, then opens `amdl`
-- `download.bat` â€” quick helper for direct download command forwarding
-- `client/` â€” Go source code for the app
-- `wrapper-docker/` â€” Docker runtime bundle for the supported backend
-- `wrapper-src/` â€” source/reference bundle kept in the repo because it may still be useful for advanced/manual workflows
-- `tools/` â€” optional local folder for binaries like `mp4decrypt.exe`
+- `amdl.exe` — prebuilt Windows binary for quick start
+- `config.yaml` — starter config with safe placeholder values
+- `setup.ps1` — builds/checks the local setup
+- `wrapper-login.ps1` — Apple Music login helper
+- `wrapper-start.ps1` — starts/stops/checks the backend wrapper
+- `start.bat` — starts wrapper, then opens `amdl`
+- `download.bat` — quick helper for direct download command forwarding
+- `client/` — Go source code for the app
+- `wrapper-docker/` — Docker runtime bundle for the supported backend
+- `wrapper-src/` — source/reference bundle kept in the repo because it may still be useful for advanced/manual workflows
+- `tools/` — optional local folder for binaries like `mp4decrypt.exe`
 
 Supported backend target:
 
@@ -271,7 +271,7 @@ Notes:
 
 ## Detailed install guide (step by step)
 
-## Step 1 â€” Open PowerShell in this folder
+## Step 1 — Open PowerShell in this folder
 
 Make sure you are inside this repo folder.
 
@@ -288,7 +288,7 @@ You can confirm with:
 dir
 ```
 
-## Step 2 â€” Allow local PowerShell scripts for this session
+## Step 2 — Allow local PowerShell scripts for this session
 
 Run:
 
@@ -298,7 +298,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 This only affects the current PowerShell window.
 
-## Step 3 â€” Run setup
+## Step 3 — Run setup
 
 Run:
 
@@ -317,7 +317,7 @@ When it succeeds, you should see something like:
 - `Setup complete`
 - next steps mentioning `amdl.exe login`
 
-## Step 4 â€” Log in with your own Apple Music account
+## Step 4 — Log in with your own Apple Music account
 
 Run:
 
@@ -339,7 +339,7 @@ wrapper-docker/rootfs/data/
 
 If Apple asks for 2FA, complete it in the terminal flow.
 
-## Step 5 â€” Start the backend wrapper
+## Step 5 — Start the backend wrapper
 
 Run:
 
@@ -359,7 +359,7 @@ To check status:
 .\wrapper-start.ps1 -Status
 ```
 
-## Step 6 â€” Run doctor check
+## Step 6 — Run doctor check
 
 Run:
 
@@ -375,10 +375,10 @@ You want to see at least:
 
 Possible warnings:
 
-- `media-user-token` missing â†’ MV / AAC-LC features not ready yet
-- `mp4decrypt` missing â†’ Music Video support not ready yet
+- `media-user-token` missing → MV / AAC-LC features not ready yet
+- `mp4decrypt` missing → Music Video support not ready yet
 
-## Step 7 â€” Start using the app
+## Step 7 — Start using the app
 
 Run:
 

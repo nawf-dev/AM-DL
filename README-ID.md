@@ -375,8 +375,8 @@ Minimal yang kamu mau lihat:
 
 Warning yang mungkin muncul:
 
-- `media-user-token` missing → fitur MV / AAC-LC belum siap
-- `mp4decrypt` missing → fitur Music Video belum siap
+- `media-user-token` missing â†’ fitur MV / AAC-LC belum siap
+- `mp4decrypt` missing â†’ fitur Music Video belum siap
 
 ## Langkah 7 — Mulai pakai aplikasi
 
