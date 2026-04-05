@@ -17,6 +17,7 @@ Important files and folders:
 - `wrapper-start.ps1` — starts/stops/checks the backend wrapper
 - `start.bat` — starts wrapper, then opens `amdl`
 - `download.bat` — quick helper for direct download command forwarding
+- `update.ps1` / `update.bat` — updater that refreshes this folder from GitHub without recloning
 - `client/` — Go source code for the app
 - `wrapper-docker/` — Docker runtime bundle for the supported backend
 - `wrapper-src/` — source/reference bundle kept in the repo because it may still be useful for advanced/manual workflows
@@ -218,6 +219,43 @@ If you want to check everything first:
 Usually only if:
 
 - `amdl.exe` is missing
+
+## How to update without recloning
+
+If you are using the ready-to-run folder/binary bundle, you do **not** need to clone the repo again just to get updates.
+
+Use one of these:
+
+```powershell
+.\amdl.exe update
+```
+
+or:
+
+```powershell
+.\update.bat
+```
+
+What the updater does:
+
+- downloads the latest `main` branch ZIP from GitHub
+- replaces bundled files like `amdl.exe`, scripts, docs, `client/`, and wrapper sources
+- keeps your existing `config.yaml`
+- keeps your local wrapper session cache under `wrapper-docker/rootfs/data`
+- tries to run `setup.ps1` afterward if Docker Desktop is ready
+
+After updating, run:
+
+```powershell
+.\wrapper-start.ps1
+.\amdl.exe doctor
+```
+
+If you cloned the repo with Git instead of using the prebuilt folder, you can still use normal Git commands:
+
+```powershell
+git pull
+```
 - you moved the project to a new PC or folder
 - you want to rebuild from source
 - you want to regenerate/check the local setup again

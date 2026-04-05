@@ -17,6 +17,7 @@ File/folder penting:
 - `wrapper-start.ps1` — helper start/stop/status backend wrapper
 - `start.bat` — start wrapper lalu buka `amdl`
 - `download.bat` — helper cepat untuk command download
+- `update.ps1` / `update.bat` — updater supaya folder ini bisa refresh dari GitHub tanpa clone ulang
 - `client/` — source code Go untuk aplikasi
 - `wrapper-docker/` — bundle runtime Docker untuk backend
 - `wrapper-src/` — bundle source/reference yang tetap disimpan karena masih bisa berguna untuk flow advanced/manual
@@ -218,6 +219,43 @@ Kalau mau cek dulu semua siap:
 Biasanya hanya kalau:
 
 - `amdl.exe` hilang
+
+## Cara update tanpa clone ulang
+
+Kalau kamu pakai folder/bundle yang sudah siap jalan, kamu **tidak perlu clone repo dari awal lagi** cuma untuk ambil update.
+
+Pakai salah satu ini:
+
+```powershell
+.\amdl.exe update
+```
+
+atau:
+
+```powershell
+.\update.bat
+```
+
+Yang dilakukan updater:
+
+- download ZIP terbaru branch `main` dari GitHub
+- ganti file bundle seperti `amdl.exe`, script, docs, `client/`, dan source wrapper
+- tetap mempertahankan `config.yaml` yang sudah kamu isi
+- tetap mempertahankan session cache lokal di `wrapper-docker/rootfs/data`
+- mencoba menjalankan `setup.ps1` setelah update kalau Docker Desktop siap
+
+Setelah update, jalankan:
+
+```powershell
+.\wrapper-start.ps1
+.\amdl.exe doctor
+```
+
+Kalau kamu memang pakai hasil `git clone`, kamu tetap bisa update dengan cara biasa:
+
+```powershell
+git pull
+```
 - project dipindah ke PC/folder baru
 - kamu mau build ulang dari source
 - kamu mau regenerate/check setup lokal lagi
