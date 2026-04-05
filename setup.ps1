@@ -12,6 +12,7 @@ $CLIENT_DIR = Join-Path $ROOT "client"
 $WRAPPER_DIR = Join-Path $ROOT "wrapper-docker"
 $BINARY_PATH = Join-Path $ROOT "amdl.exe"
 $CONFIG_PATH = Join-Path $ROOT "config.yaml"
+$VERSION_PATH = Join-Path $ROOT "version.json"
 
 function Write-Info($text) { Write-Host "[INFO] $text" -ForegroundColor Cyan }
 function Write-Ok($text) { Write-Host "[ OK ] $text" -ForegroundColor Green }
@@ -47,6 +48,36 @@ function Test-DockerReady {
         return ($LASTEXITCODE -eq 0)
     } catch {
         return $false
+    }
+}
+
+function Write-VersionMetadata {
+    if (-not (Test-CommandExists "git")) {
+        return
+    }
+
+    Push-Location $ROOT
+    try {
+        $commit = (& git rev-parse HEAD 2>$null).Trim()
+        if (-not $commit) {
+            return
+        }
+        $branch = (& git rev-parse --abbrev-ref HEAD 2>$null).Trim()
+        if (-not $branch) {
+            $branch = "main"
+        }
+        $payload = [ordered]@{
+            repo        = "nawf-dev/AM-DL"
+            branch      = $branch
+            commit      = $commit
+            shortCommit = $commit.Substring(0, [Math]::Min(7, $commit.Length))
+            source      = "git"
+            updatedAt   = (Get-Date).ToUniversalTime().ToString("o")
+        }
+        $payload | ConvertTo-Json | Set-Content -Path $VERSION_PATH -Encoding UTF8
+        Write-Ok "Version metadata ready at $VERSION_PATH"
+    } finally {
+        Pop-Location
     }
 }
 
@@ -115,6 +146,7 @@ if ($hasGo) {
         Pop-Location
     }
     Write-Ok "Built $BINARY_PATH"
+    Write-VersionMetadata
 } else {
     Write-Warn "Go not found in PATH. Using existing prebuilt amdl.exe instead."
 }
