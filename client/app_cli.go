@@ -66,7 +66,9 @@ func runApp(args []string) error {
 	case "backend":
 		return runBackendCommand(args[1:])
 	case "update":
-		return runUpdateCommand()
+		return runUpdateCommand(args[1:])
+	case "version":
+		return runVersionCommand()
 	case "config":
 		return runConfigCommand(args[1:])
 	case "token":
@@ -113,7 +115,8 @@ func printRootUsage() {
 	fmt.Println("  amdl download <apple-music-url>")
 	fmt.Println("  amdl login")
 	fmt.Println("  amdl logout [--yes]")
-	fmt.Println("  amdl update")
+	fmt.Println("  amdl update [--check]")
+	fmt.Println("  amdl version")
 	fmt.Println("  amdl token set")
 	fmt.Println("  amdl token clear")
 	fmt.Println("  amdl backend status")
@@ -138,6 +141,7 @@ func runInteractiveHome() error {
 		"Login to Apple Music",
 		"Logout / Reset Session",
 		"Update AM-DL",
+		"Show Version",
 		"Set media-user-token",
 		"Doctor Check",
 		"Backend Status",
@@ -173,7 +177,9 @@ func runInteractiveHome() error {
 	case "Logout / Reset Session":
 		return runLogoutCommand(true)
 	case "Update AM-DL":
-		return runUpdateCommand()
+		return runUpdateCommand(nil)
+	case "Show Version":
+		return runVersionCommand()
 	case "Set media-user-token":
 		return runTokenCommand([]string{"set"})
 	case "Doctor Check":
@@ -677,14 +683,23 @@ func runLogoutCommand(confirm bool) error {
 	return nil
 }
 
-func runUpdateCommand() error {
+func runUpdateCommand(args []string) error {
+	for _, arg := range args {
+		switch arg {
+		case "--check", "check":
+			return runUpdateCheckCommand()
+		default:
+			return fmt.Errorf("unknown update option: %s", arg)
+		}
+	}
+
 	scriptPath, err := session.ScriptPath("update.ps1")
 	if err != nil {
 		return err
 	}
 	fmt.Println("Starting AM-DL updater...")
-	args := []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-WaitForPid", fmt.Sprintf("%d", os.Getpid()), "-NoPause"}
-	cmd := exec.Command(powerShellBinary(), args...)
+	psArgs := []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-WaitForPid", fmt.Sprintf("%d", os.Getpid()), "-NoPause"}
+	cmd := exec.Command(powerShellBinary(), psArgs...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
